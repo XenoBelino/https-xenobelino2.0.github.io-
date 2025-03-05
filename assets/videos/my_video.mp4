@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Editor with Audio and Video</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .editor-content {
+            text-align: center;
+        }
+        #wavesurfer {
+            width: 100%;
+            height: 128px;
+            background-color: #f0f0f0;
+            margin-top: 20px;
+        }
+        video, audio {
+            margin-top: 20px;
+            max-width: 100%;
+        }
+        #volume-controls {
+            margin-top: 20px;
+        }
+        .section-container {
+            margin-top: 30px;
+        }
+        .section {
+            margin: 10px 0;
+        }
+        .section-title {
+            font-size: 18px;
+            color: #6a0dad;
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-content">
+        <h1>Edit Your Audio and Video Files</h1>
+
+        <button onclick="document.getElementById('file-input').click()">Browse my files</button>
+        <input type="file" id="file-input" style="display:none" onchange="handleFileSelect(event)">
+
+        <div id="file-info"></div>
+        <div id="media-container"></div>
+
+        <!-- Audio Waves for Different Sections -->
+        <div class="section-container">
+            <div class="section">
+                <div class="section-title">Your original File</div>
+                <div id="original-wavesurfer"></div>
+            </div>
+            <div class="section">
+                <div class="section-title">Overwriting Audio</div>
+                <div id="corrupted-wavesurfer"></div>
+            </div>
+            <div class="section">
+                <div class="section-title">The Music from Your File</div>
+                <div id="music-wavesurfer"></div>
+            </div>
+            <div class="section">
+                <div class="section-title">The Final Result</div>
+                <div id="final-wavesurfer"></div>
+            </div>
+        </div>
+
+        <div id="wavesurfer" style="width: 100%; height: 128px;"></div>
+
+        <div id="volume-controls">
+            <label for="volume">Volume</label>
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="1" onchange="adjustVolume()">
+        </div>
+    </div>
+
+    <script>
+        let mediaElement = null;
+        let wavesurferOriginal = null;
+        let wavesurferCorrupted = null;
+        let wavesurferMusic = null;
+        let wavesurferFinal = null;
+
+        // Hantera filval
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            const fileInfoDiv = document.getElementById('file-info');
+            const mediaContainer = document.getElementById('media-container');
+            
+            if (file) {
+                fileInfoDiv.textContent = `Selected file: ${file.name}`;
+                const extension = file.name.split('.').pop().toLowerCase();
+                mediaContainer.innerHTML = ''; // Rensa tidigare innehåll
+
+                if (['mp3', 'wav', 'ogg'].includes(extension)) {
+                    // Hantera ljudfil med Wavesurfer.js
+                    mediaElement = document.createElement('audio');
+                    mediaElement.controls = true;
+                    mediaElement.src = URL.createObjectURL(file);
+                    mediaContainer.appendChild(mediaElement);
+
+                    wavesurfer = WaveSurfer.create({
+                        container: '#wavesurfer',
+                        waveColor: '#ff6347',
+                        progressColor: '#f00',
+                        backend: 'MediaElement',
+                        mediaElement: mediaElement
+                    });
+
+                    wavesurfer.load(mediaElement.src);
+                } else if (['mp4', 'webm', 'avi'].includes(extension)) {
+                    // Hantera videofil
+                    mediaElement = document.createElement('video');
+                    mediaElement.controls = true;
+                    mediaElement.src = URL.createObjectURL(file);
+                    mediaContainer.appendChild(mediaElement);
+                } else {
+                    fileInfoDiv.textContent = "Unsupported file type!";
+                }
+
+                // Ladda och visa ljudvågor för de fyra sektionerna
+                loadWaveSurfer('#original-wavesurfer', 'original');
+                loadWaveSurfer('#corrupted-wavesurfer', 'corrupted');
+                loadWaveSurfer('#music-wavesurfer', 'music');
+                loadWaveSurfer('#final-wavesurfer', 'final');
+            }
+        }
+
+        // Funktion för att ladda Wavesurfer.js för varje sektion
+        function loadWaveSurfer(containerId, type) {
+            const wavesurferContainer = document.querySelector(containerId);
+            const wavesurferInstance = WaveSurfer.create({
+                container: wavesurferContainer,
+                waveColor: '#ff6347',
+                progressColor: '#f00',
+                backend: 'MediaElement',
+                mediaElement: mediaElement
+            });
+            // Ladda ljudet baserat på den typ du vill
+            wavesurferInstance.load(mediaElement.src);
+            
+            // Spara instansen i den globala variabeln
+            if (type === 'original') wavesurferOriginal = wavesurferInstance;
+            else if (type === 'corrupted') wavesurferCorrupted = wavesurferInstance;
+            else if (type === 'music') wavesurferMusic = wavesurferInstance;
+            else if (type === 'final') wavesurferFinal = wavesurferInstance;
+        }
+
+        // Justera volymen
+        function adjustVolume() {
+            let volumeControl = document.getElementById('volume');
+            if (mediaElement) {
+                mediaElement.volume = volumeControl.value;
+            }
+        }
+    </script>
+</body>
+</html>
